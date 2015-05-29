@@ -3,8 +3,8 @@ module Jobs
   class CreateThumbnails < Jobs::Base
 
     def execute(args)
-      upload_id = args[:upload_id]
       type = args[:type]
+      upload_id = args[:upload_id]
 
       raise Discourse::InvalidParameters.new(:upload_id) if upload_id.blank?
       raise Discourse::InvalidParameters.new(:type) if type.blank?
@@ -14,18 +14,14 @@ module Jobs
 
       upload = Upload.find(upload_id)
 
-      self.send("create_thumbnails_for_#{type}", upload)
+      user_id = args[:user_id] || upload.user_id
+      user = User.find(user_id)
+
+      self.send("create_thumbnails_for_#{type}", upload, user)
     end
 
-    PIXEL_RATIOS ||= [1, 2, 3]
-
-    def create_thumbnails_for_avatar(upload)
-      PIXEL_RATIOS.each do |pixel_ratio|
-        Discourse.avatar_sizes.each do |size|
-          size *= pixel_ratio
-          OptimizedImage.create_for(upload, max, max, allow_animation: SiteSetting.allow_animated_avatars)
-        end
-      end
+    def create_thumbnails_for_avatar(upload, user)
+      UserAvatar.create_thumbnails(upload, user)
     end
 
   end
